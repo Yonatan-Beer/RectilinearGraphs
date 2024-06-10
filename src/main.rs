@@ -18,8 +18,8 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "Rectilinear Graphs",
         native_options,
-        Box::new(|cc| Box::new(rectilinear_graphs::TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(rectilinear_graphs::Graphs::new(cc))),
     )
 }
