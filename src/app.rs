@@ -1,16 +1,28 @@
 use egui::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum Modes {
     Add,
     Connect,
     Move
 }
 
+fn are_incident(e1: Vec<[Pos2; 2]>, e2: Vec<[Pos2; 2]>) -> bool{
+    if(e1[0] == e2[0] || e1[1] == e2[0] || e1[0] == e2[1] || e1[1] == e2[1]){
+        return true;
+    }
+    return false;
+}
+
+fn intersect(e1: Vec<[Pos2; 2]>, e2: Vec<[Pos2; 2]>) -> bool{
+
+    return false
+}
+
 pub struct Graphs {
 
     vertices: Vec<Pos2>,
-    edges: Vec<Vec<Pos2>>,
+    edges: Vec<[Pos2; 2]>,
     stroke: Stroke,
     fill: Color32,
     mode: Modes,
@@ -54,7 +66,22 @@ impl Graphs {
             ui.selectable_value(mode, Modes::Move, "Move Vertices");
         });
     }
+
+    fn draw_vertices(self, painter: &Painter){
+        for vertex in self.vertices {
+            painter.circle(vertex, 0.1, self.fill, self.stroke);
+        }
+    }
+
+    fn draw_edges(self, painter: &Painter){
+        for edge in self.edges {
+            painter.line_segment(edge, self.stroke);
+        }
+    }
+
 }
+
+
 
 impl eframe::App for Graphs {
    
@@ -66,18 +93,24 @@ impl eframe::App for Graphs {
             // The top panel is often a good place for a menu bar:
 
             egui::menu::bar(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
-                let is_web = cfg!(target_arch = "wasm32");
-                
                 self.buttons(ui);
-
 
             });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.painter();
-           
+            let painter = ui.painter();
+
+            let edgelist = self.edges.clone();
+            for edge in edgelist {
+                painter.line_segment(edge, self.stroke);
+            }
+
+            let verlist = self.vertices.clone();
+            for vertex in verlist {
+                painter.circle(vertex, 0.1, self.fill, self.stroke);
+            }
         });
     }
 }
