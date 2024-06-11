@@ -5,11 +5,12 @@ use epaint::CircleShape;
 enum Modes {
     Add,
     Connect,
-    Move
+    Move,
+    Delete
 }
 
-fn are_incident(e1: Vec<[Pos2; 2]>, e2: Vec<[Pos2; 2]>) -> bool{
-    if e1[0] == e2[0] || e1[1] == e2[0] || e1[0] == e2[1] || e1[1] == e2[1]{
+fn are_incident(e1: [CircleShape; 2], e2: [CircleShape; 2]) -> bool{
+    if e1[0].center == e2[0].center || e1[1].center == e2[0].center || e1[0].center == e2[1].center || e1[1].center == e2[1].center{
         return true;
     }
     return false;
@@ -20,15 +21,23 @@ fn intersect(e1: Vec<[Pos2; 2]>, e2: Vec<[Pos2; 2]>) -> bool{
     return false
 }
 
+fn unordeq(e1:&[CircleShape; 2],e2: &[CircleShape; 2]) -> bool{
+    if (e1[0].eq(&e2[1]) && e1[1].eq(&e2[0])) || e1.eq(e2) {
+        return true;
+    }
+    return false;
+}
+
 pub struct Graphs {
 
     vertices: Vec<CircleShape>,
     edges: Vec<[CircleShape; 2]>,
     stroke: Stroke,
     fill: Color32,
+    highlight: Color32,
     mode: Modes,
-    radius: f32
-    
+    radius: f32,
+    cur: CircleShape
 }
 
 impl Default for Graphs {
@@ -36,14 +45,17 @@ impl Default for Graphs {
         Self {
             vertices: Default::default(),
             edges: Default::default(),
-            stroke: Stroke::new(1.0, Color32::from_rgb(25, 200, 100)),
-            fill: Color32::from_rgb(50, 100, 150).linear_multiply(0.25),
+            stroke: Stroke::new(1.0, Color32::from_rgb(200, 100, 100)),
+            fill: Color32::from_rgb(50, 100, 150),
+            highlight: Color32::from_rgb(255, 255, 0),
             mode: Modes::Add,
-            radius: 12.0
+            radius: 12.0, 
+            cur: CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE)
         }
         
     }
 }
+
 impl Graphs {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self::default()
@@ -55,8 +67,10 @@ impl Graphs {
             edges,
             stroke,
             fill,
+            highlight,
             mode,
             radius,
+            cur,
         } = self;
 
         ui.add_space(12.0);
@@ -73,6 +87,9 @@ impl Graphs {
                 .spacing([12.0, 8.0])
                 .striped(true)
                 .show(ui, |ui| {
+                    ui.label("vertex radius");
+                    ui.add(egui::DragValue::new(&mut self.radius).speed(0.1));
+
                     ui.label("vertex color");
                     ui.color_edit_button_srgba(&mut self.fill);
 
@@ -86,16 +103,27 @@ impl Graphs {
     }
 
     fn onclick(&mut self, ui: &mut egui::Ui) {
-        let (mut response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::drag());
+        let desired_size = egui::vec2(self.radius+self.radius, self.radius+self.radius);
+        
+        
+
+        let (mut response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::click());
         let to_screen = emath::RectTransform::from_to(
             Rect::from_min_size(Pos2::ZERO, response.rect.square_proportions()),
             response.rect,
         );
         let from_screen = to_screen.inverse();
-        if let Some(pointer_pos) = response.interact_pointer_pos() {
-            if self.mode == Modes::Add {
+        if self.mode == Modes::Add {
+            if let Some(pointer_pos) = response.interact_pointer_pos() {
                 let vert = CircleShape::filled(pointer_pos, self.radius, self.fill);
                 self.vertices.push(vert);
+            }
+        } 
+
+        if self.mode == Modes::Connect {
+            
+            if let Some(pointer_pos) = response.interact_pointer_pos() {
+                
             }
         }
 
@@ -133,7 +161,10 @@ impl eframe::App for Graphs {
 
             let verlist = self.vertices.clone();
             for vertex in verlist {
-                painter.circle(vertex.center, 10.0, self.fill, Stroke::new(0.0, Color32::from_rgb(0, 0,0)));
+                painter.circle_filled(vertex.center, self.radius, self.fill);
+            }
+            if self.cur.center != Pos2::ZERO{
+                painter.circle_stroke(self.cur.center, self.radius, Stroke::new(0.0, Color32::from_rgb(0, 0,0)));
             }
         });
     }
