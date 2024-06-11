@@ -110,17 +110,6 @@ impl Graphs {
     }
 
     fn onclick(&mut self, ui: &mut egui::Ui) {
-        let desired_size = egui::vec2(self.radius+self.radius, self.radius+self.radius);
-        
-        let mut responses: Vec<Response> = Vec::new();
-        for node in self.vertices.clone(){
-            let butt = ui.button("");
-            //responses.push();
-            //ui.put()
-
-        }
-
-
         let (mut response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::click());
         let to_screen = emath::RectTransform::from_to(
             Rect::from_min_size(Pos2::ZERO, response.rect.square_proportions()),
@@ -136,7 +125,11 @@ impl Graphs {
         } 
 
         if self.mode == Modes::Connect {
-            
+            let mut responses: Vec<Response> = Vec::new();
+            for node in self.vertices.clone(){
+                responses.push(ui.put(makeboundbox(node.center, self.radius), egui::widgets::Button::new("")));
+            }
+
             if let Some(pointer_pos) = response.interact_pointer_pos() {
                 
             }
@@ -164,8 +157,8 @@ impl eframe::App for Graphs {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.onclick(ui);
             ui.painter();
+            self.onclick(ui);
             let painter = ui.painter();
 
             let edgelist = self.edges.clone();
