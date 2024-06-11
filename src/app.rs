@@ -121,6 +121,7 @@ impl Graphs {
         if self.mode == Modes::Add {
             self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
             if let Some(pointer_pos) = response.interact_pointer_pos() {
+                
                 let vert = CircleShape::filled(pointer_pos, self.radius, self.fill);
                 self.vertices.push(vert);
             }
@@ -170,8 +171,7 @@ impl Graphs {
             }
             for i in 0..responses.len(){
                 if responses[i].is_pointer_button_down_on(){ 
-                    
-                    self.vertices[i] = CircleShape::filled(ui.next_widget_position(), self.radius, self.fill);
+                    self.vertices[i] = CircleShape::filled(self.vertices[i].center + responses[i].drag_delta(), self.radius, self.fill);
 
    
                 }
