@@ -32,12 +32,13 @@ pub struct Graphs {
 impl Default for Graphs {
     fn default() -> Self {
         Self {
-            vertices: Default::default(),
+            vertices: vec![Pos2::new(10.0,10.0)],
             edges: Default::default(),
             stroke: Stroke::new(1.0, Color32::from_rgb(25, 200, 100)),
             fill: Color32::from_rgb(50, 100, 150).linear_multiply(0.25),
             mode: Modes::Add
         }
+        
     }
 }
 impl Graphs {
@@ -58,25 +59,31 @@ impl Graphs {
             mode,
         } = self;
 
-        ui.add_space(16.0);
+        ui.add_space(24.0);
 
         ui.horizontal(|ui| {
             ui.selectable_value(mode, Modes::Add, "Add Vertices");
             ui.selectable_value(mode, Modes::Connect, "Add Edges");
             ui.selectable_value(mode, Modes::Move, "Move Vertices");
         });
-    }
 
-    fn draw_vertices(self, painter: &Painter){
-        for vertex in self.vertices {
-            painter.circle(vertex, 0.1, self.fill, self.stroke);
-        }
-    }
+        ui.collapsing("Colors", |ui| {
+            Grid::new("colors")
+                .num_columns(2)
+                .spacing([12.0, 8.0])
+                .striped(true)
+                .show(ui, |ui| {
+                    ui.label("vertex color");
+                    ui.color_edit_button_srgba(&mut self.fill);
 
-    fn draw_edges(self, painter: &Painter){
-        for edge in self.edges {
-            painter.line_segment(edge, self.stroke);
-        }
+                    //ui.label("edge color");
+                    //ui.color_edit_button_srgba(&mut self.stroke);
+                    
+                });
+
+                
+        });
+        
     }
 
 }
