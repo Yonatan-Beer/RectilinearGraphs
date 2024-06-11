@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use egui::*;
 use epaint::CircleShape;
 
@@ -56,6 +58,11 @@ impl Default for Graphs {
     }
 }
 
+fn makeboundbox(center: Pos2, radius:f32) -> Rect{ 
+    let topleft = Pos2::new(center.x - radius, center.y - radius);
+    return Rect::from_min_size(topleft, Vec2::new(radius+radius, radius+radius));
+}
+
 impl Graphs {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self::default()
@@ -105,7 +112,14 @@ impl Graphs {
     fn onclick(&mut self, ui: &mut egui::Ui) {
         let desired_size = egui::vec2(self.radius+self.radius, self.radius+self.radius);
         
-        
+        let mut responses: Vec<Response> = Vec::new();
+        for node in self.vertices.clone(){
+            let butt = ui.button("");
+            //responses.push();
+            //ui.put()
+
+        }
+
 
         let (mut response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::click());
         let to_screen = emath::RectTransform::from_to(
@@ -114,6 +128,7 @@ impl Graphs {
         );
         let from_screen = to_screen.inverse();
         if self.mode == Modes::Add {
+            self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
             if let Some(pointer_pos) = response.interact_pointer_pos() {
                 let vert = CircleShape::filled(pointer_pos, self.radius, self.fill);
                 self.vertices.push(vert);
