@@ -32,7 +32,7 @@ pub struct Graphs {
 impl Default for Graphs {
     fn default() -> Self {
         Self {
-            vertices: vec![Pos2::new(10.0,10.0)],
+            vertices: vec![Pos2::new(100.0,100.0)],
             edges: Default::default(),
             stroke: Stroke::new(1.0, Color32::from_rgb(25, 200, 100)),
             fill: Color32::from_rgb(50, 100, 150).linear_multiply(0.25),
@@ -76,8 +76,8 @@ impl Graphs {
                     ui.label("vertex color");
                     ui.color_edit_button_srgba(&mut self.fill);
 
-                    //ui.label("edge color");
-                    //ui.color_edit_button_srgba(&mut self.stroke);
+                    ui.label("edge width");
+                    egui::widgets::stroke_ui(ui,&mut self.stroke, "edge color");
                     
                 });
 
@@ -116,7 +116,7 @@ impl eframe::App for Graphs {
 
             let verlist = self.vertices.clone();
             for vertex in verlist {
-                painter.circle(vertex, 0.1, self.fill, self.stroke);
+                painter.circle(vertex, 10.0, self.fill, Stroke::new(0.0, Color32::from_rgb(0, 0,0)));
             }
         });
     }
