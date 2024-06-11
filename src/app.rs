@@ -36,7 +36,7 @@ pub struct Graphs {
     edges: Vec<[CircleShape; 2]>,
     stroke: Stroke,
     fill: Color32,
-    highlight: Color32,
+    highlight: Stroke,
     mode: Modes,
     radius: f32,
     cur: CircleShape
@@ -49,7 +49,7 @@ impl Default for Graphs {
             edges: Default::default(),
             stroke: Stroke::new(1.0, Color32::from_rgb(200, 100, 100)),
             fill: Color32::from_rgb(50, 100, 150),
-            highlight: Color32::from_rgb(255, 255, 0),
+            highlight: Stroke::new(2.0,Color32::from_rgb(255, 255, 0)),
             mode: Modes::Add,
             radius: 12.0, 
             cur: CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE)
@@ -103,6 +103,8 @@ impl Graphs {
                     ui.label("edge width");
                     egui::widgets::stroke_ui(ui,&mut self.stroke, "edge color");
                     
+                    ui.label("highlight width");
+                    egui::widgets::stroke_ui(ui,&mut self.highlight, "highlight color");
                 });
 
                 
@@ -130,10 +132,43 @@ impl Graphs {
                 responses.push(ui.put(makeboundbox(node.center, self.radius), egui::widgets::Button::new("")));
             }
 
-            if let Some(pointer_pos) = response.interact_pointer_pos() {
-                
+            for i in 0..responses.len(){
+                if responses[i].clicked(){
+                    if self.cur.center == Pos2::ZERO{
+                        self.cur = self.vertices[i];
+                    } else if self.vertices[i] == self.cur{
+                        continue;
+                    } else {
+                        
+                        let newedge = [self.cur, self.vertices[i]];
+                        let mut alreadyhere = false;
+                        for edge in self.edges.clone(){
+                            if unordeq(&newedge, &edge){
+                                alreadyhere = true;
+                            }
+                        }
+                        if !alreadyhere{
+                            self.edges.push(newedge);
+                        }
+                        self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
+                    }
+                }
             }
         }
+
+        if self.mode == Modes::Move {
+            let mut responses: Vec<Response> = Vec::new();
+            for node in self.vertices.clone(){
+                responses.push(ui.put(makeboundbox(node.center, self.radius), egui::widgets::Button::new("")));
+            }
+
+            for i in 0..responses.len(){
+                if responses[i].clicked(){
+                    //self.vertices[i] = 
+                }
+            }
+        }
+
 
     }
 }
@@ -172,7 +207,7 @@ impl eframe::App for Graphs {
                 painter.circle_filled(vertex.center, self.radius, self.fill);
             }
             if self.cur.center != Pos2::ZERO{
-                painter.circle_stroke(self.cur.center, self.radius, Stroke::new(0.0, Color32::from_rgb(0, 0,0)));
+                painter.circle_stroke(self.cur.center, self.radius, self.highlight);
             }
         });
     }
