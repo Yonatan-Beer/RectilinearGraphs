@@ -33,7 +33,7 @@ fn unordeq(e1:&[CircleShape; 2],e2: &[CircleShape; 2]) -> bool{
 pub struct Graphs {
 
     vertices: Vec<CircleShape>,
-    edges: Vec<[CircleShape; 2]>,
+    edges: Vec<[usize; 2]>,
     stroke: Stroke,
     fill: Color32,
     highlight: Stroke,
@@ -143,12 +143,18 @@ impl Graphs {
                         let newedge = [self.cur, self.vertices[i]];
                         let mut alreadyhere = false;
                         for edge in self.edges.clone(){
-                            if unordeq(&newedge, &edge){
+                            let pointedge = [self.vertices[edge[0]],self.vertices[edge[1]]];
+                            if unordeq(&newedge, &pointedge){
                                 alreadyhere = true;
                             }
                         }
                         if !alreadyhere{
-                            self.edges.push(newedge);
+                            for j in 0..self.vertices.len(){
+                                if self.vertices[j] == self.cur {
+                                    self.edges.push([j,i]);
+                                }
+                            }
+                        
                         }
                         self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
                     }
@@ -157,16 +163,20 @@ impl Graphs {
         }
 
         if self.mode == Modes::Move {
+            self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
             let mut responses: Vec<Response> = Vec::new();
             for node in self.vertices.clone(){
-                responses.push(ui.put(makeboundbox(node.center, self.radius), egui::widgets::Button::new("")));
+                responses.push(ui.put(makeboundbox(node.center, self.radius), egui::widgets::Button::new("")).interact(Sense::click_and_drag()));
             }
-
             for i in 0..responses.len(){
-                if responses[i].clicked(){
-                    //self.vertices[i] = 
+                if responses[i].is_pointer_button_down_on(){ 
+                    
+                    self.vertices[i] = CircleShape::filled(ui.next_widget_position(), self.radius, self.fill);
+
+   
                 }
             }
+            
         }
 
 
@@ -197,8 +207,9 @@ impl eframe::App for Graphs {
             let painter = ui.painter();
 
             let edgelist = self.edges.clone();
-            for edge in edgelist {
-                let cordedge = [edge[0].center, edge[1].center];
+            for e in edgelist {
+                let v1 = self.vertices[e[0]]; let v2 = self.vertices[e[1]];
+                let cordedge = [v1.center, v2.center];
                 painter.line_segment(cordedge, self.stroke);
             }
 
