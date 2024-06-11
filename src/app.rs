@@ -121,9 +121,16 @@ impl Graphs {
         if self.mode == Modes::Add {
             self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
             if let Some(pointer_pos) = response.interact_pointer_pos() {
-                
-                let vert = CircleShape::filled(pointer_pos, self.radius, self.fill);
-                self.vertices.push(vert);
+                let mut safezone = true;
+                for node in self.vertices.clone() {
+                    if (pointer_pos.distance(node.center)) < self.radius + self.radius {
+                        safezone = false;
+                    }
+                }
+                if safezone {
+                    let vert = CircleShape::filled(pointer_pos, self.radius, self.fill);
+                    self.vertices.push(vert);
+                }
             }
         } 
 
