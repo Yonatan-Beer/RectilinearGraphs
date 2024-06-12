@@ -1,4 +1,5 @@
 use std::ops::Add;
+use itertools::Itertools;
 
 use egui::*;
 use epaint::CircleShape;
@@ -11,16 +12,22 @@ enum Modes {
     Delete
 }
 
-fn are_incident(e1: [CircleShape; 2], e2: [CircleShape; 2]) -> bool{
-    if e1[0].center == e2[0].center || e1[1].center == e2[0].center || e1[0].center == e2[1].center || e1[1].center == e2[1].center{
+fn are_incident(e1: [Pos2; 2], e2: [Pos2; 2]) -> bool{
+    if e1[0] == e2[0] || e1[1] == e2[0] || e1[0] == e2[1] || e1[1] == e2[1]{
         return true;
     }
     return false;
 }
 
-fn intersect(e1: Vec<[Pos2; 2]>, e2: Vec<[Pos2; 2]>) -> bool{
-
-    return false
+fn intersect(e1: [Pos2; 2], e2: [Pos2; 2]) -> bool{
+    let det = (e1[1].x - e1[0].x) * (e2[1].y - e2[0].y) - (e1[1].y - e1[0].y) * (e2[1].x - e2[0].x);
+    if det == 0.0 {
+        return false;
+    } else {
+        let lam = ((e2[1].y - e2[0].y) * (e2[1].x - e1[0].x) + (e2[0].x - e2[1].x) * (e1[1].y - e1[0].y))/det;
+        let gam = ((e1[0].y - e1[1].y) * (e2[1].y - e1[0].x) + (e1[1].x - e1[0].x) * (e1[1].y - e1[0].y))/det;
+        return (0.0 < lam  && lam < 1.0) && (0.0 < gam && gam < 1.0); 
+    }
 }
 
 fn unordeq(e1:&[CircleShape; 2],e2: &[CircleShape; 2]) -> bool{
@@ -67,6 +74,26 @@ impl Graphs {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self::default()
     }
+
+    fn getvert(self, ind: usize) -> Pos2 {
+        return self.vertices[ind].center;
+    }
+
+    fn count_intersections(&mut self) -> i64{
+        let mut count = 0;
+        let copyof =  self.edges.clone();
+        let edgepairs = copyof.iter().cartesian_product(self.edges.iter());
+        for pair in edgepairs{
+            let e1 = [self.vertices[pair.0[0]].center, self.vertices[pair.0[1]].center];
+            let e2 = [self.vertices[pair.1[0]].center, self.vertices[pair.1[1]].center];
+            if (intersect(e1, e2) && !are_incident(e1, e2)){
+                count+=1;
+            }
+
+        }
+        return count;
+    }
+
 
     fn buttons(&mut self, ui: &mut egui::Ui) {
         let Self {
@@ -204,6 +231,9 @@ impl eframe::App for Graphs {
 
             egui::menu::bar(ui, |ui| {
                 self.buttons(ui);
+                let crosstext = format!("Crossings: {}", self.count_intersections()/2);
+                ui.label(crosstext);
+
                 
             });
         });
