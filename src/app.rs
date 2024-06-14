@@ -1,4 +1,3 @@
-use std::ops::Add;
 use itertools::Itertools;
 
 use egui::*;
@@ -9,7 +8,8 @@ enum Modes {
     Add,
     Connect,
     Move,
-    Delete
+    Delete,
+    Velete
 }
 
 fn are_incident(e1: [Pos2; 2], e2: [Pos2; 2]) -> bool{
@@ -24,8 +24,8 @@ fn intersect(e1: [Pos2; 2], e2: [Pos2; 2]) -> bool{
     if det == 0.0 {
         return false;
     } else {
-        let lam = ((e2[1].y - e2[0].y) * (e2[1].x - e1[0].x) + (e2[0].x - e2[1].x) * (e1[1].y - e1[0].y))/det;
-        let gam = ((e1[0].y - e1[1].y) * (e2[1].y - e1[0].x) + (e1[1].x - e1[0].x) * (e1[1].y - e1[0].y))/det;
+        let lam = ((e2[1].y - e2[0].y) * (e2[1].x - e1[0].x) + (e2[0].x - e2[1].x) * (e2[1].y - e1[0].y))/det;
+        let gam = ((e1[0].y - e1[1].y) * (e2[1].x - e1[0].x) + (e1[1].x - e1[0].x) * (e2[1].y - e1[0].y))/det;
         return (0.0 < lam  && lam < 1.0) && (0.0 < gam && gam < 1.0); 
     }
 }
@@ -91,7 +91,7 @@ impl Graphs {
             }
 
         }
-        return count;
+        return count/2;
     }
 
 
@@ -231,8 +231,10 @@ impl eframe::App for Graphs {
 
             egui::menu::bar(ui, |ui| {
                 self.buttons(ui);
-                let crosstext = format!("Crossings: {}", self.count_intersections()/2);
-                ui.label(crosstext);
+                let crosstext = format!("Crossings: {}", self.count_intersections());
+
+                ui.add_space(5.0);
+                ui.colored_label(Color32::from_rgb(240, 120, 40), crosstext);
 
                 
             });
