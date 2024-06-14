@@ -9,7 +9,7 @@ enum Modes {
     Connect,
     Move,
     Delete,
-    Velete
+    Disconnect,
 }
 
 fn are_incident(e1: [Pos2; 2], e2: [Pos2; 2]) -> bool{
@@ -75,9 +75,6 @@ impl Graphs {
         Self::default()
     }
 
-    fn getvert(self, ind: usize) -> Pos2 {
-        return self.vertices[ind].center;
-    }
 
     fn count_intersections(&mut self) -> i64{
         let mut count = 0;
@@ -113,8 +110,16 @@ impl Graphs {
             ui.selectable_value(mode, Modes::Add, "Add Vertices");
             ui.selectable_value(mode, Modes::Connect, "Add Edges");
             ui.selectable_value(mode, Modes::Move, "Move Vertices");
+            ui.selectable_value(mode, Modes::Delete, "Delete Vertices");
+            ui.selectable_value(mode, Modes::Disconnect, "Delete Edges");
         });
 
+        if ui.add(egui::Button::new("Delete Graph").stroke(Stroke::new(1.0, Color32::from_rgb(244, 244, 244)))).clicked(){
+            self.vertices =  Default::default();
+            self.edges = Default::default();
+        }
+
+        ui.add_space(7.0);
         ui.collapsing("Colors", |ui| {
             Grid::new("colors")
                 .num_columns(2)
@@ -144,7 +149,7 @@ impl Graphs {
             Rect::from_min_size(Pos2::ZERO, response.rect.square_proportions()),
             response.rect,
         );
-        let from_screen = to_screen.inverse();
+
         if self.mode == Modes::Add {
             self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
             if let Some(pointer_pos) = response.interact_pointer_pos() {
@@ -197,6 +202,46 @@ impl Graphs {
             }
         }
 
+        if self.mode == Modes::Disconnect {
+            let mut responses: Vec<Response> = Vec::new();
+            for node in self.vertices.clone(){
+                responses.push(ui.put(makeboundbox(node.center, self.radius), egui::widgets::Button::new("")));
+            }
+
+            for i in 0..responses.len(){
+                if responses[i].clicked(){
+                    if self.cur.center == Pos2::ZERO{
+                        self.cur = self.vertices[i];
+                    } else if self.vertices[i] == self.cur{
+                        continue;
+                    } else {
+                        for j in 0..self.vertices.len(){
+                            if self.vertices[j] == self.cur {
+                               let e1 = [i,j];
+                               let e2 = [j,i];
+                               self.edges.retain(|x| *x != e1 && *x != e2);
+                            }
+                        }
+                            
+                        self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
+                    }
+                }
+            }
+        }
+
+        if self.mode == Modes::Delete {
+            self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
+            let mut responses: Vec<Response> = Vec::new();
+            for node in self.vertices.clone(){
+                responses.push(ui.put(makeboundbox(node.center, self.radius), egui::widgets::Button::new("")));
+            }
+            for i in 0..responses.len(){
+                if responses[i].clicked(){
+                    
+                }
+            }
+        }
+
         if self.mode == Modes::Move {
             self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
             let mut responses: Vec<Response> = Vec::new();
@@ -231,16 +276,25 @@ impl eframe::App for Graphs {
 
             egui::menu::bar(ui, |ui| {
                 self.buttons(ui);
-                let crosstext = format!("Crossings: {}", self.count_intersections());
-
-                ui.add_space(5.0);
-                ui.colored_label(Color32::from_rgb(240, 120, 40), crosstext);
-
+                
                 
             });
         });
 
+  
         egui::CentralPanel::default().show(ctx, |ui| {
+            let arr = egui::Window::new("")
+            .title_bar(false)
+            .auto_sized()
+            .movable(true)
+            .default_pos(Pos2::new(2.0, 2.0))
+            .show(ctx, |ui| {
+                let crosstext = format!("Crossings: {}", self.count_intersections());
+                let rt = RichText::new(crosstext).size(20.0).underline();
+                ui.colored_label(Color32::from_rgb(240, 120, 40), rt);
+             });
+    
+
             ui.painter();
             self.onclick(ui);
             let painter = ui.painter();
