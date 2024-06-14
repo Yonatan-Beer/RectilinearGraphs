@@ -110,16 +110,21 @@ impl Graphs {
             ui.selectable_value(mode, Modes::Add, "Add Vertices");
             ui.selectable_value(mode, Modes::Connect, "Add Edges");
             ui.selectable_value(mode, Modes::Move, "Move Vertices");
+
+            ui.add_space(20.0);
+
             ui.selectable_value(mode, Modes::Delete, "Delete Vertices");
             ui.selectable_value(mode, Modes::Disconnect, "Delete Edges");
         });
+
+        ui.add_space(40.0);
 
         if ui.add(egui::Button::new("Delete Graph").stroke(Stroke::new(1.0, Color32::from_rgb(244, 244, 244)))).clicked(){
             self.vertices =  Default::default();
             self.edges = Default::default();
         }
 
-        ui.add_space(7.0);
+        ui.add_space(40.0);
         ui.collapsing("Colors", |ui| {
             Grid::new("colors")
                 .num_columns(2)
@@ -237,7 +242,25 @@ impl Graphs {
             }
             for i in 0..responses.len(){
                 if responses[i].clicked(){
-                    
+                    self.vertices.remove(i);
+                    let mut marked: Vec<usize> = Vec::new();
+                    let mut egs = self.edges.clone();
+                    for k in 0..egs.len(){
+                        if egs[k][0] == i || egs[k][1] == i {
+                            marked.push(k);
+                        }
+                        if egs[k][0] > i {
+                            egs[k][0] -= 1;
+                        }
+                        if egs[k][1] > i {
+                            egs[k][1] -= 1;
+                        }
+                    }
+                    marked.reverse();
+                    for ind in marked{
+                        egs.remove(ind);
+                    }
+                    self.edges = egs;
                 }
             }
         }
