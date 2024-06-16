@@ -1,9 +1,10 @@
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use egui::*;
 use epaint::CircleShape;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone,Serialize, Deserialize)]
 enum Modes {
     Add,
     Connect,
@@ -12,6 +13,8 @@ enum Modes {
     Disconnect,
     Drag,
 }
+
+
 
 fn are_incident(e1: [Pos2; 2], e2: [Pos2; 2]) -> bool{
     if e1[0] == e2[0] || e1[1] == e2[0] || e1[0] == e2[1] || e1[1] == e2[1]{
@@ -38,6 +41,8 @@ fn unordeq(e1:&[CircleShape; 2],e2: &[CircleShape; 2]) -> bool{
     return false;
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)] 
 pub struct Graphs {
     vertices: Vec<CircleShape>,
     edges: Vec<[usize; 2]>,
@@ -61,7 +66,7 @@ impl Default for Graphs {
             fill: Color32::from_rgb(50, 100, 150),
             highlight: Stroke::new(2.0,Color32::from_rgb(255, 255, 0)),
             mode: Modes::Add,
-            radius: 12.0, 
+            radius: 22.0, 
             cur: CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE),
             labels: false,
             labelcolor: Color32::from_rgb(245, 235, 245),
@@ -76,7 +81,11 @@ fn makeboundbox(center: Pos2, radius:f32) -> Rect{
 }
 
 impl Graphs {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        if let Some(storage) = cc.storage {
+            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        }
+
         Self::default()
     }
 
@@ -307,6 +316,10 @@ impl Graphs {
 
 
 impl eframe::App for Graphs {
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
+    }
    
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -354,7 +367,7 @@ impl eframe::App for Graphs {
                 painter.circle_filled(self.vertices[i].center, self.radius, self.fill);
                 if self.labels {
                     painter.text(self.vertices[i].center, 
-                        Align2::CENTER_CENTER, format!("{}", i), 
+                        Align2::CENTER_CENTER, format!("{}", i+1), 
                         FontId::new(self.radius, FontFamily::default()), 
                         self.labelcolor);
                 }
