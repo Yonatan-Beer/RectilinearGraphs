@@ -10,6 +10,7 @@ enum Modes {
     Move,
     Delete,
     Disconnect,
+    Drag,
 }
 
 fn are_incident(e1: [Pos2; 2], e2: [Pos2; 2]) -> bool{
@@ -38,7 +39,6 @@ fn unordeq(e1:&[CircleShape; 2],e2: &[CircleShape; 2]) -> bool{
 }
 
 pub struct Graphs {
-
     vertices: Vec<CircleShape>,
     edges: Vec<[usize; 2]>,
     stroke: Stroke,
@@ -46,7 +46,10 @@ pub struct Graphs {
     highlight: Stroke,
     mode: Modes,
     radius: f32,
-    cur: CircleShape
+    cur: CircleShape,
+    labels: bool,
+    labelcolor: Color32,
+
 }
 
 impl Default for Graphs {
@@ -59,7 +62,9 @@ impl Default for Graphs {
             highlight: Stroke::new(2.0,Color32::from_rgb(255, 255, 0)),
             mode: Modes::Add,
             radius: 12.0, 
-            cur: CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE)
+            cur: CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE),
+            labels: false,
+            labelcolor: Color32::from_rgb(245, 235, 245),
         }
         
     }
@@ -83,7 +88,7 @@ impl Graphs {
         for pair in edgepairs{
             let e1 = [self.vertices[pair.0[0]].center, self.vertices[pair.0[1]].center];
             let e2 = [self.vertices[pair.1[0]].center, self.vertices[pair.1[1]].center];
-            if (intersect(e1, e2) && !are_incident(e1, e2)){
+            if intersect(e1, e2) && !are_incident(e1, e2) {
                 count+=1;
             }
 
@@ -94,31 +99,34 @@ impl Graphs {
 
     fn buttons(&mut self, ui: &mut egui::Ui) {
         let Self {
-            vertices,
-            edges,
-            stroke,
-            fill,
-            highlight,
+            vertices: _,
+            edges: _,
+            stroke: _,
+            fill: _,
+            highlight: _,
             mode,
-            radius,
-            cur,
+            radius: _,
+            cur: _,
+            labels,
+            labelcolor: _,
         } = self;
-
-        ui.add_space(12.0);
+        ui.add_space(3.0);
+        ui.checkbox(labels, "Vertex Labels");
+        ui.add_space(10.0);
 
         ui.horizontal(|ui| {
             ui.selectable_value(mode, Modes::Add, "Add Vertices");
             ui.selectable_value(mode, Modes::Connect, "Add Edges");
             ui.selectable_value(mode, Modes::Move, "Move Vertices");
 
-            ui.add_space(20.0);
+            ui.add_space(35.0);
 
             ui.selectable_value(mode, Modes::Delete, "Delete Vertices");
             ui.selectable_value(mode, Modes::Disconnect, "Delete Edges");
         });
 
         ui.add_space(40.0);
-
+        ui.selectable_value(mode, Modes::Drag, "Move Graph");
         if ui.add(egui::Button::new("Delete Graph").stroke(Stroke::new(1.0, Color32::from_rgb(244, 244, 244)))).clicked(){
             self.vertices =  Default::default();
             self.edges = Default::default();
@@ -137,6 +145,9 @@ impl Graphs {
                     ui.label("vertex color");
                     ui.color_edit_button_srgba(&mut self.fill);
 
+                    ui.label("Label color");
+                    ui.color_edit_button_srgba(&mut self.labelcolor);
+
                     ui.label("edge width");
                     egui::widgets::stroke_ui(ui,&mut self.stroke, "edge color");
                     
@@ -149,8 +160,8 @@ impl Graphs {
     }
 
     fn onclick(&mut self, ui: &mut egui::Ui) {
-        let (mut response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::click());
-        let to_screen = emath::RectTransform::from_to(
+        let (response, _painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::click());
+        let _to_screen = emath::RectTransform::from_to(
             Rect::from_min_size(Pos2::ZERO, response.rect.square_proportions()),
             response.rect,
         );
@@ -265,6 +276,15 @@ impl Graphs {
             }
         }
 
+        if self.mode == Modes::Drag {
+            let dr = ui.interact(ui.max_rect(), Id::new("Graph drag"), Sense::drag());
+            if dr.dragged(){
+                for i in 0..self.vertices.clone().len(){
+                    self.vertices[i] = CircleShape::filled(self.vertices[i].center + dr.drag_delta(), self.radius, self.fill);
+                }
+            }
+        }
+
         if self.mode == Modes::Move {
             self.cur = CircleShape::stroke(Pos2::ZERO, 0.0, Stroke::NONE);
             let mut responses: Vec<Response> = Vec::new();
@@ -279,9 +299,8 @@ impl Graphs {
                 }
             }
             
+
         }
-
-
     }
 }
 
@@ -306,8 +325,9 @@ impl eframe::App for Graphs {
 
   
         egui::CentralPanel::default().show(ctx, |ui| {
-            let arr = egui::Window::new("")
-            .title_bar(false)
+            egui::Window::new("")
+            .title_bar(true)
+            .collapsible(false)
             .auto_sized()
             .movable(true)
             .default_pos(Pos2::new(2.0, 2.0))
@@ -330,9 +350,16 @@ impl eframe::App for Graphs {
             }
 
             let verlist = self.vertices.clone();
-            for vertex in verlist {
-                painter.circle_filled(vertex.center, self.radius, self.fill);
+            for i in 0..verlist.len() {
+                painter.circle_filled(self.vertices[i].center, self.radius, self.fill);
+                if self.labels {
+                    painter.text(self.vertices[i].center, 
+                        Align2::CENTER_CENTER, format!("{}", i), 
+                        FontId::new(self.radius, FontFamily::default()), 
+                        self.labelcolor);
+                }
             }
+
             if self.cur.center != Pos2::ZERO{
                 painter.circle_stroke(self.cur.center, self.radius, self.highlight);
             }
