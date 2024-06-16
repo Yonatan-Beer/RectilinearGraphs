@@ -119,7 +119,8 @@ impl Graphs {
             labels,
             labelcolor: _,
         } = self;
-        ui.add_space(3.0);
+        egui::widgets::global_dark_light_mode_switch(ui);
+        ui.add_space(5.0);
         ui.checkbox(labels, "Vertex Labels");
         ui.add_space(10.0);
 
