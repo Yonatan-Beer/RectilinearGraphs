@@ -119,36 +119,12 @@ impl Graphs {
             labels,
             labelcolor: _,
         } = self;
-        egui::widgets::global_dark_light_mode_switch(ui);
-        ui.add_space(5.0);
-        ui.checkbox(labels, "Vertex Labels");
-        ui.add_space(10.0);
+        
 
-        ui.horizontal(|ui| {
-            ui.selectable_value(mode, Modes::Add, "Add Vertices");
-            ui.selectable_value(mode, Modes::Connect, "Add Edges");
-            ui.selectable_value(mode, Modes::Move, "Move Vertices");
-
-            ui.add_space(35.0);
-
-            ui.selectable_value(mode, Modes::Delete, "Delete Vertices");
-            ui.selectable_value(mode, Modes::Disconnect, "Delete Edges");
-        });
-
-        ui.add_space(40.0);
-        ui.selectable_value(mode, Modes::Drag, "Move Graph");
-        if ui.add(egui::Button::new("Delete Graph").stroke(Stroke::new(1.0, Color32::from_rgb(244, 244, 244)))).clicked(){
-            self.vertices =  Default::default();
-            self.edges = Default::default();
-        }
-
-        ui.add_space(40.0);
-        ui.collapsing("Colors", |ui| {
-            Grid::new("colors")
-                .num_columns(2)
-                .spacing([12.0, 8.0])
-                .striped(true)
-                .show(ui, |ui| {
+        egui::menu::menu_button(ui, "Appearance", |ui| {
+            egui::widgets::global_dark_light_mode_buttons(ui);
+                ui.checkbox(labels, "Vertex Labels");
+                ui.menu_button("Colors", |ui| {
                     ui.label("vertex radius");
                     ui.add(egui::DragValue::new(&mut self.radius).speed(0.1));
 
@@ -158,15 +134,37 @@ impl Graphs {
                     ui.label("Label color");
                     ui.color_edit_button_srgba(&mut self.labelcolor);
 
-                    ui.label("edge width");
-                    egui::widgets::stroke_ui(ui,&mut self.stroke, "edge color");
+                    ui.label("Edge Stroke");
+                    egui::widgets::stroke_ui(ui,&mut self.stroke, "");
                     
-                    ui.label("highlight width");
-                    egui::widgets::stroke_ui(ui,&mut self.highlight, "highlight color");
-                });
+                    ui.label("Highlight Stroke");
+                    egui::widgets::stroke_ui(ui,&mut self.highlight, "");
 
-                
-        });        
+                });
+        });
+       
+        ui.add_space(10.0);
+
+        ui.horizontal(|ui| {
+            ui.selectable_value(mode, Modes::Add, "Add Vertices");
+            ui.selectable_value(mode, Modes::Connect, "Add Edges");
+            ui.selectable_value(mode, Modes::Move, "Move Vertices");
+            ui.selectable_value(mode, Modes::Drag, "Move Graph");
+
+            ui.add_space(5.0);
+
+            ui.selectable_value(mode, Modes::Delete, "Delete Vertices");
+            ui.selectable_value(mode, Modes::Disconnect, "Delete Edges");
+        });
+
+        ui.add_space(20.0);
+        if ui.add(egui::Button::new("Delete Graph").stroke(Stroke::new(1.0, Color32::from_rgb(244, 244, 244)))).clicked(){
+            self.vertices =  Default::default();
+            self.edges = Default::default();
+        }
+
+        ui.add_space(40.0);
+            
     }
 
     fn onclick(&mut self, ui: &mut egui::Ui) {
@@ -332,7 +330,30 @@ impl eframe::App for Graphs {
 
             egui::menu::bar(ui, |ui| {
                 self.buttons(ui);
-                
+                let tikzbutton = ui.button("Export To Tikz");
+                let popup_id = ui.make_persistent_id("tikzid");
+                egui::popup::popup_above_or_below_widget(ui, popup_id, &tikzbutton, egui::AboveOrBelow::Below, |ui| { 
+                    ui.set_min_width(178.0);
+                    ui.label("Tikz Graph Copied To Clipboard!");
+                });
+                if tikzbutton.clicked() {
+                    let mut text:String = "\\begin{tikzpicture} \n".to_string();
+                    text.push_str("\t % Nodes \n");
+                    for i in 0..self.vertices.len(){
+                        if self.labels {
+                            text = text + &format!("\t \\node ({}) at {:?} [circle,draw] {{${}$}};\n", i, (self.vertices[i].center.x/100.0, self.vertices[i].center.y/100.0), i+1);
+                        } else {text = text + &format!("\t \\node ({}) at {:?} [circle,draw] {{}};\n", i, (self.vertices[i].center.x/100.0, self.vertices[i].center.y/100.0));
+                        }
+                    }
+                    text.push_str("\n \t % Edges \n");
+                    for i in 0..self.edges.len(){
+                        text = text + &format!("\t \\draw ({}) -- ({}); \n", self.edges[i][0], self.edges[i][1]);
+                    }
+
+                    text.push_str("\\end{tikzpicture}");
+                    ui.output_mut(|o| o.copied_text = text);
+                    ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+                }
                 
             });
         });
